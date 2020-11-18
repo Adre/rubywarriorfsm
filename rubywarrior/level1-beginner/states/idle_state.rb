@@ -18,8 +18,4 @@ class IdleState < AbstractState
     player.idled_for = 0
     super
   end
-
-  def key
-    :idle
-  end
 end

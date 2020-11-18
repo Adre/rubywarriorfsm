@@ -31,6 +31,10 @@ class AbstractState
     execution_state = EXECUTION_STATE[:completed]
   end
 
+  def key
+    self.class.name.downcase.gsub('state', '').to_sym
+  end
+
   private
 
   attr_reader :finite_state_machine, :player

@@ -1,10 +1,13 @@
-require 'states/idle_state'
-require 'states/patrol_state'
+Dir['states/*.rb'].each { |file| require file }
 
 class FiniteStateMachine
   VALID_STATES = {
     idle: IdleState,
-    patrol: PatrolState
+    patrol: PatrolState,
+    attack: AttackState,
+    rest: RestState,
+    retreat: RetreatState,
+    rescue: RescueState,
   }
 
   def initialize(player:)
@@ -17,7 +20,7 @@ class FiniteStateMachine
       )
     end
     @current_state = nil
-    @starting_state = states[:idle]
+    @starting_state = states[:patrol]
 
     @idle_for = 1
     @patrol_for = 2
@@ -45,10 +48,24 @@ class FiniteStateMachine
 
   def transition_state
     case current_state.key
-    when :idle
-      enter_state states[:patrol] if player.idled_for >= idle_for
     when :patrol
-      enter_state states[:idle] if player.patrolled_for >= patrol_for
+      enter_state states[:attack] if player.warrior.feel.enemy?
+      enter_state states[:rescue] if player.warrior.feel.captive?
+    when :attack
+      return if player.feel_something?
+
+      if player.needs_rest?
+        enter_state states[:rest]
+      else
+        enter_state states[:patrol]
+      end
+    when :rest
+      enter_state states[:retreat] if player.losing_health?
+      enter_state states[:patrol] if player.healthy?
+    when :retreat_state
+      enter_state states[:rest] unless player.losing_health?
+    when :rescue
+      enter_state states[:patrol] unless player.feel_something?
     end
   end
 
